@@ -32,6 +32,8 @@
 # CMAKE_BUILD_TYPE can be: empty, Debug, Release, RelWithDebInfo or MinSizeRel
 #
 
+set(CMAKE_BUILD_TYPE "Debug")
+
 # Make sure the user doesn't play dirty with symlinks
 get_filename_component (srcdir "${CMAKE_SOURCE_DIR}" REALPATH)
 get_filename_component (bindir "${CMAKE_BINARY_DIR}" REALPATH)
