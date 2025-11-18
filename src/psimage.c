@@ -677,7 +677,9 @@ EXTERN_MSC int GMT_psimage (void *V_API, int mode, void *args) {
 				PSL_plotepsimage (PSL, x, y, Ctrl->D.dim[GMT_X], Ctrl->D.dim[GMT_Y], PSL_BL, picture, &header);
 			else if (header.depth == 1) {
 				/* Invert is opposite from what is expected. This is to match the behavior of -Gp */
+				GMT_Report (API, GMT_MSG_INFORMATION, "Ctrl->I.active = %d, PSIMAGE_FGD = %d, PSIMAGE_BGD = %d\n", Ctrl->I.active, PSIMAGE_FGD, PSIMAGE_BGD);
 				if (Ctrl->I.active)
+          
 					PSL_plotbitimage (PSL, x, y, Ctrl->D.dim[GMT_X], Ctrl->D.dim[GMT_Y], PSL_BL, picture,
 							header.width, header.height, Ctrl->G.rgb[PSIMAGE_FGD], Ctrl->G.rgb[PSIMAGE_BGD]);
 				else
