@@ -88,6 +88,22 @@ jobs:
         env:
           DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
 
+      - name: DVC Pull Debug
+        if: always()
+        run: |
+          echo "=== Listing DVC-tracked files ==="
+          dvc list . --dvc-only || true
+          echo "=== Check for missing files ==="
+          dvc status -c || true
+          echo "=== Show local cache status ==="
+          dvc status || true
+          echo "=== Verify key baseline/example/script paths ==="
+          ls -ld test/baseline doc/examples/images doc/scripts/images || true
+          echo "=== Count pulled images ==="
+          find test/baseline -type f | wc -l || true
+          find doc/examples/images -type f | wc -l || true
+          find doc/scripts/images -type f | wc -l || true
+
       - name: Configure GMT
         run: |
           if [ "$RUNNER_OS" != "Windows" ]; then
