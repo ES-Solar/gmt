@@ -5,6 +5,17 @@ name: Tests
 
 on:
   workflow_dispatch:
+    inputs:
+      os:
+        description: 'Platform(s) to run'
+        required: true
+        default: 'macos'
+        type: choice
+        options:
+          - macos
+          - linux
+          - windows
+          - all
   push:
     branches:
       - master
@@ -51,13 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: Linux
-            os: ubuntu-latest
-          - name: macOS
-            os: macos-15-intel # macos-14 use M1 chips, which causes many failures
-          - name: Windows
-            os: windows-latest
+        include: ${{ fromJSON(github.event_name != 'workflow_dispatch' && '[{"name":"Linux","os":"ubuntu-latest"},{"name":"macOS","os":"macos-15-intel"},{"name":"Windows","os":"windows-latest"}]' || inputs.os == 'all' && '[{"name":"Linux","os":"ubuntu-latest"},{"name":"macOS","os":"macos-15-intel"},{"name":"Windows","os":"windows-latest"}]' || inputs.os == 'macos' && '[{"name":"macOS","os":"macos-15-intel"}]' || inputs.os == 'linux' && '[{"name":"Linux","os":"ubuntu-latest"}]' || '[{"name":"Windows","os":"windows-latest"}]') }}
 
     steps:
       - name: Checkout
