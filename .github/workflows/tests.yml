@@ -122,6 +122,17 @@ jobs:
           cmake --build .
         if: runner.os == 'Windows'
 
+      - name: DVC credentials preflight
+        run: |
+          if [ -z "${DAGSHUB_TOKEN:-}" ]; then
+            echo "::error::Missing DAGSHUB_TOKEN secret."
+            echo "::error::Add repository secret DAGSHUB_TOKEN in your fork: Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "DVC credential check passed."
+        env:
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+
       - name: Pull baseline image data from dvc remote
         run: |
           dvc remote modify origin url https://${DAGSHUB_TOKEN}@dagshub.com/GenericMappingTools/gmt.dvc --local
