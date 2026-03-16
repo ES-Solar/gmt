@@ -202,6 +202,18 @@ jobs:
           call do_examples.bat
         if: runner.os == 'Windows'
 
+      - name: Upload selected test outputs for PS comparison
+        uses: actions/upload-artifact@v6
+        with:
+          name: SelectedTestOutputs-${{ runner.os }}
+          path: |
+            build/Testing/Temporary/LastTest.log
+            build/Testing/Temporary/LastTestsFailed.log
+            build/test/fail_count.txt
+            build/test/pscoast/oblsuite_N/
+            build/test/grdview/texture2_modern/
+        if: always() && runner.os == 'macOS'
+
       - name: Upload build directory if failed
         uses: actions/upload-artifact@v6
         with:
