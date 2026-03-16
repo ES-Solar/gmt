@@ -14,6 +14,7 @@ set -euo pipefail
 # Notes:
 # - <ci_artifact_dir> should be the extracted artifact root that contains build/test/...
 # - <local_build_dir> should be the local build directory that contains test/...
+# - Test targets are auto-detected from known cases and only available outputs are compared.
 
 if [[ $# -ne 2 ]]; then
   echo "Usage: $0 <ci_artifact_dir> <local_build_dir>" >&2
@@ -32,10 +33,33 @@ if [[ ! -d "$LOCAL_BUILD" ]]; then
   exit 1
 fi
 
-TESTS=(
+KNOWN_TESTS=(
+  # Current focused workflow targets.
   "pscoast/oblsuite_N:oblsuite_N.ps"
+  "gmtmath/lsfit:lsfit.ps"
+  # Older focused artifact target (kept for backward compatibility).
   "grdview/texture2_modern:texture2_modern.ps"
 )
+
+TESTS=()
+for t in "${KNOWN_TESTS[@]}"; do
+  dir="${t%%:*}"
+  ps="${t##*:}"
+  ci_ps="$CI_ROOT/build/test/$dir/$ps"
+  local_ps="$LOCAL_BUILD/test/$dir/$ps"
+  if [[ -f "$ci_ps" || -f "$local_ps" ]]; then
+    TESTS+=("$t")
+  fi
+done
+
+if [[ ${#TESTS[@]} -eq 0 ]]; then
+  echo "No known test outputs detected under CI artifact or local build." >&2
+  echo "Checked candidates:" >&2
+  for t in "${KNOWN_TESTS[@]}"; do
+    echo "  - $t" >&2
+  done
+  exit 1
+fi
 
 have_gm=0
 if command -v gm >/dev/null 2>&1; then
@@ -44,6 +68,10 @@ fi
 
 echo "CI root      : $CI_ROOT"
 echo "Local build  : $LOCAL_BUILD"
+echo "Auto-detected comparisons:"
+for t in "${TESTS[@]}"; do
+  echo "  - ${t%%:*}/${t##*:}"
+done
 if [[ $have_gm -eq 1 ]]; then
   echo "gm compare   : enabled ($(gm version | head -1))"
 else
