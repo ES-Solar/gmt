@@ -45,7 +45,11 @@ TESTS=()
 for t in "${KNOWN_TESTS[@]}"; do
   dir="${t%%:*}"
   ps="${t##*:}"
+  # Try both the original location and the preserved_test_outputs location
   ci_ps="$CI_ROOT/build/test/$dir/$ps"
+  if [[ ! -f "$ci_ps" ]]; then
+    ci_ps="$CI_ROOT/build/preserved_test_outputs/$dir/$ps"
+  fi
   local_ps="$LOCAL_BUILD/test/$dir/$ps"
   if [[ -f "$ci_ps" || -f "$local_ps" ]]; then
     TESTS+=("$t")
@@ -85,6 +89,9 @@ for t in "${TESTS[@]}"; do
   ps="${t##*:}"
 
   ci_ps="$CI_ROOT/build/test/$dir/$ps"
+  if [[ ! -f "$ci_ps" ]]; then
+    ci_ps="$CI_ROOT/build/preserved_test_outputs/$dir/$ps"
+  fi
   local_ps="$LOCAL_BUILD/test/$dir/$ps"
 
   echo "=== $dir/$ps ==="
