@@ -16,6 +16,14 @@ on:
           - linux
           - windows
           - all
+      test_scope:
+        description: 'Test scope for manual runs'
+        required: true
+        default: 'focused'
+        type: choice
+        options:
+          - focused
+          - full
   push:
     branches:
       - master
@@ -185,15 +193,17 @@ jobs:
         run: |
           set -x -e
           cd build
+          ctest_args=(--output-on-failure --force-new-ctest-process -j4 --timeout 480)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.test_scope }}" == "focused" ]]; then
+            ctest_args+=(-R "test/pscoast/oblsuite_N.sh|test/gmtmath/lsfit.sh")
+          fi
           # Disable MinGW's path conversion, see #1035.
           if [ "$RUNNER_OS" == "Windows" ]; then export MSYS_NO_PATHCONV=1; fi
           # Run tests
-          ctest ${CTEST_ARGS} || ctest ${CTEST_ARGS} --rerun-failed || ctest ${CTEST_ARGS} --rerun-failed
+          ctest "${ctest_args[@]}" || ctest "${ctest_args[@]}" --rerun-failed || ctest "${ctest_args[@]}" --rerun-failed
           # show the slowest tests
           sort -k3nr Testing/Temporary/CTestCostData.txt > /tmp/cost.txt
           head -n 30 /tmp/cost.txt | awk 'NF==3 {printf("%50-s %d %5.1f\n", $1, $2, $3)}'
-        env:
-          CTEST_ARGS : "--output-on-failure --force-new-ctest-process -j4 --timeout 480"
 
       - name: Run DOS batch examples (Windows)
         shell: cmd
@@ -211,7 +221,7 @@ jobs:
             build/Testing/Temporary/LastTestsFailed.log
             build/test/fail_count.txt
             build/test/pscoast/oblsuite_N/
-            build/test/grdview/texture2_modern/
+            build/test/gmtmath/lsfit/
         if: always() && runner.os == 'macOS'
 
       - name: Upload build directory if failed
