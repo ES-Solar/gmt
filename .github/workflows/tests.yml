@@ -189,6 +189,30 @@ jobs:
         run: call ci/simple-gmt-tests.bat
         if: runner.os == 'Windows'
 
+      - name: Capture focused build fingerprint
+        if: runner.os == 'macOS' && github.event_name == 'workflow_dispatch' && inputs.test_scope == 'focused'
+        run: |
+          mkdir -p build/preserved_test_outputs
+          out=build/preserved_test_outputs/build_fingerprint.txt
+          {
+            echo "=== GMT focused CI build fingerprint ==="
+            echo "Date: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            echo "Runner: $RUNNER_OS"
+            echo
+            echo "-- gmt --version --"
+            build/src/gmt --version || true
+            echo
+            echo "-- linked libs: build/src/gmt --"
+            otool -L build/src/gmt || true
+            echo
+            echo "-- linked libs: build/src/libgmt.6.dylib --"
+            otool -L build/src/libgmt.6.dylib || true
+            echo
+            echo "-- key CMake cache entries --"
+            grep -E 'CMAKE_(C_COMPILER|C_COMPILER_VERSION|C_FLAGS|BUILD_TYPE)|GMT_ENABLE_OPENMP|OpenMP_|HAVE_OPENMP|LAPACK|BLAS|FFT|GEOS|GDAL|NETCDF|CURL|PCRE' build/CMakeCache.txt || true
+          } > "$out"
+          echo "Wrote $out"
+
       - name: Keep passing test directories for focused artifact capture
         if: runner.os == 'macOS' && github.event_name == 'workflow_dispatch' && inputs.test_scope == 'focused'
         run: |

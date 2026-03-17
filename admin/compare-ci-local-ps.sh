@@ -41,17 +41,36 @@ KNOWN_TESTS=(
   "grdview/texture2_modern:texture2_modern.ps"
 )
 
+find_ci_ps() {
+  local dir="$1"
+  local ps="$2"
+  local test_name="${dir##*/}"
+  local candidates=(
+    "$CI_ROOT/build/test/$dir/$ps"
+    "$CI_ROOT/build/preserved_test_outputs/$dir/$ps"
+    "$CI_ROOT/preserved_test_outputs/$dir/$ps"
+    "$CI_ROOT/build/preserved_test_outputs/$test_name/$ps"
+    "$CI_ROOT/preserved_test_outputs/$test_name/$ps"
+  )
+  local p
+  for p in "${candidates[@]}"; do
+    if [[ -f "$p" ]]; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  done
+  # Default to the most likely focused-artifact path for missing-file reporting.
+  printf '%s\n' "$CI_ROOT/preserved_test_outputs/$test_name/$ps"
+}
+
 TESTS=()
 for t in "${KNOWN_TESTS[@]}"; do
   dir="${t%%:*}"
   ps="${t##*:}"
-  # Try both the original location and the preserved_test_outputs location
-  ci_ps="$CI_ROOT/build/test/$dir/$ps"
-  if [[ ! -f "$ci_ps" ]]; then
-    ci_ps="$CI_ROOT/build/preserved_test_outputs/$dir/$ps"
-  fi
+  ci_ps="$(find_ci_ps "$dir" "$ps")"
   local_ps="$LOCAL_BUILD/test/$dir/$ps"
-  if [[ -f "$ci_ps" || -f "$local_ps" ]]; then
+  # Only compare tests that are present in CI artifact outputs.
+  if [[ -f "$ci_ps" ]]; then
     TESTS+=("$t")
   fi
 done
@@ -88,10 +107,7 @@ for t in "${TESTS[@]}"; do
   dir="${t%%:*}"
   ps="${t##*:}"
 
-  ci_ps="$CI_ROOT/build/test/$dir/$ps"
-  if [[ ! -f "$ci_ps" ]]; then
-    ci_ps="$CI_ROOT/build/preserved_test_outputs/$dir/$ps"
-  fi
+  ci_ps="$(find_ci_ps "$dir" "$ps")"
   local_ps="$LOCAL_BUILD/test/$dir/$ps"
 
   echo "=== $dir/$ps ==="
