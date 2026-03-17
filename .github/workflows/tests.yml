@@ -189,6 +189,20 @@ jobs:
         run: call ci/simple-gmt-tests.bat
         if: runner.os == 'Windows'
 
+      - name: Keep passing test directories for focused artifact capture
+        if: runner.os == 'macOS' && github.event_name == 'workflow_dispatch' && inputs.test_scope == 'focused'
+        run: |
+          # gmtest normally deletes passing test directories in cleanup().
+          # Replace that deletion line so passing directories are retained.
+          sed -i.bak 's/test "$ERROR" -eq 0 -a "$memtrack_err" -eq 0 -a "$valgrind_err" -eq 0 && rm -rf "$exec_dir"/echo "Keeping $exec_dir for focused artifact capture"/' build/test/gmtest
+          # Require proof that the cleanup line was replaced.
+          if ! grep -q 'Keeping \$exec_dir for focused artifact capture' build/test/gmtest; then
+            echo "::error::Failed to patch build/test/gmtest cleanup logic; passing test dirs may be deleted."
+            exit 1
+          fi
+          echo "Patched cleanup lines in build/test/gmtest:"
+          grep -n 'Keeping \$exec_dir\|rm -rf "\$exec_dir"' build/test/gmtest || true
+
       - name: Run full tests
         run: |
           set -x -e
@@ -210,12 +224,22 @@ jobs:
         run: |
           cd build
           mkdir -p preserved_test_outputs
+          echo "Checking focused test directories before copy:"
+          for test_dir in test/pscoast/oblsuite_N test/gmtmath/lsfit; do
+            if [[ -d "$test_dir" ]]; then
+              echo "FOUND: $test_dir"
+            else
+              echo "MISSING: $test_dir"
+            fi
+          done
           for test_dir in test/pscoast/oblsuite_N test/gmtmath/lsfit; do
             if [[ -d "$test_dir" ]]; then
               cp -r "$test_dir" preserved_test_outputs/
               echo "Preserved: $test_dir"
             fi
           done
+          echo "Preserved files:"
+          find preserved_test_outputs -maxdepth 3 -type f | sort || true
           ls -la preserved_test_outputs/
 
       - name: Run DOS batch examples (Windows)
